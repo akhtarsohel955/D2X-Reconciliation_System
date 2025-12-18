@@ -1,6 +1,8 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param,HttpStatus} from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { CreateJobDto } from './dto/create-job.dto';
+import { Response } from 'express';0
+import { generateDownloadUrl } from '../../infra/s3/s3.presign';
 
 @Controller('jobs')
 export class JobsController {
@@ -26,8 +28,42 @@ export class JobsController {
   }
 
   // GET /jobs/:id
-  @Get(':id')
-  async getJob(@Param('id') jobId: string) {
-    return this.jobsService.getJobById(jobId);
+  @Get(':id/download')
+  async downloadJobResult(@Param('id') jobId: string) {
+    const job = await this.jobsService.getJobById(jobId);
+
+    if (!job) {
+      return {
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'Job not found',
+      };
+    }
+
+    if (job.status === 'PROCESSING' || job.status === 'PENDING') {
+      return {
+        statusCode: HttpStatus.ACCEPTED,
+        status: job.status,
+        message: 'Document is still being processed',
+      };
+    }
+
+    if (job.status === 'FAILED') {
+      return {
+        statusCode: HttpStatus.BAD_REQUEST,
+        status: 'FAILED',
+        error: job.errorMessage || 'Processing failed',
+      };
+    }
+
+    const downloadUrl = await generateDownloadUrl(
+      process.env.S3_BUCKET!,
+      job.outputFileKey!,
+    );
+
+    return {
+      statusCode: HttpStatus.OK,
+      status: 'COMPLETED',
+      downloadUrl,
+    };
   }
 }
