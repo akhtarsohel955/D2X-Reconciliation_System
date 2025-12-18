@@ -2,8 +2,8 @@ import {
   ReceiveMessageCommand,
   DeleteMessageCommand,
 } from '@aws-sdk/client-sqs';
-import { sqsClient } from './sqs.client.js';
-import { markJobProcessing } from '../jobs/job.repository.js';
+import { sqsClient } from './sqs.client';
+import { markJobProcessing } from '../jobs/job.repository';
 
 const QUEUE_URL = process.env.SQS_QUEUE_URL!;
 

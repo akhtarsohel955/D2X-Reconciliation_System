@@ -9,10 +9,10 @@ import {
 @Entity('jobs')
 export class Job {
   @PrimaryColumn({ type: 'char', length: 36 })
-  id: string;
+  id!: string;                // FIX
 
   @Column()
-  status: string;
+  status!: string;            // FIX
 
   @Column({ nullable: true })
   outputFileKey?: string;
@@ -21,8 +21,8 @@ export class Job {
   errorMessage?: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;           // FIX
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;           // FIX
 }
