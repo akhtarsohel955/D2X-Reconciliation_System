@@ -4,7 +4,7 @@ import {
 } from '@aws-sdk/client-sqs';
 import { sqsClient } from './sqs.client';
 import { markJobProcessing } from '../jobs/job.repository';
-
+import { TextractService } from '../textract/textract.service';
 const QUEUE_URL = process.env.SQS_QUEUE_URL!;
 
 export async function pollQueue() {
@@ -29,25 +29,42 @@ export async function pollQueue() {
     console.log('📥 Received job:', body);
 
     try {
-      // Step 1: mark job as PROCESSING
       await markJobProcessing(jobId);
 
-      console.log(`✅ Job ${jobId} marked as PROCESSING`);
+      // 🔥 TEXTRACT FLOW STARTS
+      const textractJobId = await TextractService.startJob(
+        inputFileKey,
+        documentType,
+      );
 
-      // (Textract + Excel will go here later)
+      console.log(`🧠 Textract started: ${textractJobId}`);
 
-      // Step 2: delete message from queue
+      await TextractService.waitForCompletion(
+        textractJobId,
+        documentType,
+      );
+
+      const textractResult = await TextractService.getFullResult(
+        textractJobId,
+        documentType,
+      );
+
+      console.log(
+        `✅ Textract completed for job ${jobId}, blocks:`,
+        textractResult.length,
+      );
+
+      // (Parsing + Excel will come next)
+
       await sqsClient.send(
         new DeleteMessageCommand({
           QueueUrl: QUEUE_URL,
           ReceiptHandle: message.ReceiptHandle!,
         }),
       );
-
-      console.log(`🗑️ Message deleted for job ${jobId}`);
-    } catch (err) {
-      console.error('❌ Error processing job', err);
-      // Message will reappear due to visibility timeout
+    } catch (err: any) {
+      console.error('❌ Textract error:', err.message);
+      throw err;
     }
   }
 }
