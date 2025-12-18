@@ -8,3 +8,17 @@ export async function markJobProcessing(jobId: string) {
     status: 'PROCESSING',
   });
 }
+
+export async function updateJobStatus(
+  jobId: string,
+  status: string,
+  extra?: {
+    outputFileKey?: string;
+    errorMessage?: string;
+  },
+) {
+  await JobRepository.update(jobId, {
+    status,
+    ...extra,
+  });
+}

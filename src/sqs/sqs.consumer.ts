@@ -5,6 +5,12 @@ import {
 import { sqsClient } from './sqs.client';
 import { markJobProcessing } from '../jobs/job.repository';
 import { TextractService } from '../textract/textract.service';
+import { generateExpenseExcel } from '../exporters/excel.exporter';
+import { uploadExcelToS3 } from '../storage/s3.service';
+import { updateJobStatus } from '../jobs/job.repository';
+
+import { parseExpenseDocuments } from '../parsers/expense.parser'; // FOR TESTING OF PARSER ONLY NEED TO REMOVE IT IN PRODUCTION
+
 const QUEUE_URL = process.env.SQS_QUEUE_URL!;
 
 export async function pollQueue() {
@@ -49,9 +55,20 @@ export async function pollQueue() {
         documentType,
       );
 
+      const parsedExpense = parseExpenseDocuments(textractResult); //  // FOR TESTING OF PARSER ONLY NEED TO REMOVE IT IN PRODUCTION
+      const excelBuffer = await generateExpenseExcel(parsedExpense);
+
+      const outputKey = `outputs/job-${jobId}.xlsx`;    /// S3 OUTPUTS directory
+
+      await uploadExcelToS3(excelBuffer, outputKey);
+
+      await updateJobStatus(jobId, 'COMPLETED', {
+        outputFileKey: outputKey,
+      });
+
+      console.log(`📄 Excel generated and uploaded: ${outputKey}`);
       console.log(
-        `✅ Textract completed for job ${jobId}, blocks:`,
-        textractResult.length,
+        JSON.stringify(parsedExpense, null, 2),
       );
 
       // (Parsing + Excel will come next)

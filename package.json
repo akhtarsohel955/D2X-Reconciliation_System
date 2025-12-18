@@ -11,9 +11,11 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.954.0",
     "@aws-sdk/client-sqs": "^3.953.0",
     "@aws-sdk/client-textract": "^3.954.0",
     "dotenv": "^17.2.3",
+    "exceljs": "^4.4.0",
     "mysql2": "^3.16.0",
     "typeorm": "^0.3.28"
   }
