@@ -26,7 +26,33 @@ export class JobsController {
       status: job.status,
     };
   }
+    // JOB STATUS POLLING API
+  @Get(':id/status')
+  async getJobStatus(@Param('id') jobId: string) {
+    const job = await this.jobsService.getJobById(jobId);
 
+    if (!job) {
+      return {
+        statusCode: 404,
+        message: 'Job not found',
+      };
+    }
+
+    // FAILED job
+    if (job.status === 'FAILED') {
+      return {
+        jobId: job.id,
+        status: job.status,
+        error: job.errorMessage || 'Processing failed',
+      };
+    }
+
+    // PENDING / PROCESSING / COMPLETED
+    return {
+      jobId: job.id,
+      status: job.status,
+    };
+  }
   // GET /jobs/:id
   @Get(':id/download')
   async downloadJobResult(@Param('id') jobId: string) {
