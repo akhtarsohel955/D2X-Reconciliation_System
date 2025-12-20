@@ -5,11 +5,16 @@ import {
 import { sqsClient } from './sqs.client';
 import { markJobProcessing } from '../jobs/job.repository';
 import { TextractService } from '../textract/textract.service';
+
+import { parseHRDocument } from '../parsers/hr.parser';
+import { generateHRExcel } from '../exporters/hr.excel.exporter';
+
+import { parseExpenseDocuments } from '../parsers/expense.parser';
 import { generateExpenseExcel } from '../exporters/excel.exporter';
+
 import { uploadExcelToS3 } from '../storage/s3.service';
 import { updateJobStatus } from '../jobs/job.repository';
 
-import { parseExpenseDocuments } from '../parsers/expense.parser'; // FOR TESTING OF PARSER ONLY NEED TO REMOVE IT IN PRODUCTION
 
 const QUEUE_URL = process.env.SQS_QUEUE_URL!;
 
@@ -55,21 +60,35 @@ export async function pollQueue() {
         documentType,
       );
 
-      const parsedExpense = parseExpenseDocuments(textractResult); //  // FOR TESTING OF PARSER ONLY NEED TO REMOVE IT IN PRODUCTION
-      const excelBuffer = await generateExpenseExcel(parsedExpense);
+      let excelBuffer: Buffer;
+      let outputKey = `outputs/job-${jobId}.xlsx`;
 
-      const outputKey = `outputs/job-${jobId}.xlsx`;    /// S3 OUTPUTS directory
+      if (documentType === 'EXPENSE') {
+        // -------- Expense Flow --------
+        const parsedExpense = parseExpenseDocuments(textractResult);
 
+        excelBuffer = await generateExpenseExcel(parsedExpense);
+
+      } else if (documentType === 'HR') {
+        // -------- HR Flow --------
+        const parsedHR = parseHRDocument(textractResult);
+
+        excelBuffer = await generateHRExcel(parsedHR);
+
+      } else {
+        throw new Error(`Unsupported document type: ${documentType}`);
+      }
+
+      // Upload Excel
       await uploadExcelToS3(excelBuffer, outputKey);
 
+      // Mark job completed
       await updateJobStatus(jobId, 'COMPLETED', {
         outputFileKey: outputKey,
       });
 
-      console.log(`📄 Excel generated and uploaded: ${outputKey}`);
-      console.log(
-        JSON.stringify(parsedExpense, null, 2),
-      );
+      console.log(`✅ ${documentType} job completed: ${outputKey}`);
+
 
       // (Parsing + Excel will come next)
 
