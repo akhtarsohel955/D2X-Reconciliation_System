@@ -15,21 +15,21 @@ export class JobsService {
   async createJob(params: {
     userId: string;
     inputFileKey: string;
-    inputFileType: string;
     documentType: 'EXPENSE' | 'HR';
   }) {
+    const extension = params.inputFileKey.split('.').pop() || 'unknown';
+
     const job = this.jobRepository.create({
       id: uuid(),
       userId: params.userId,
       inputFileKey: params.inputFileKey,
-      inputFileType: params.inputFileType,
+      inputFileType: extension, // ✅ derived here
       documentType: params.documentType,
       status: 'PENDING',
     });
 
     const savedJob = await this.jobRepository.save(job);
 
-    // 🔥 Push job to SQS (ASYNC processing starts here)
     await SqsProducer.sendJobMessage({
       jobId: savedJob.id,
       inputFileKey: savedJob.inputFileKey,
@@ -38,6 +38,7 @@ export class JobsService {
 
     return savedJob;
   }
+
 
   async getJobById(jobId: string) {
     return this.jobRepository.findOne({

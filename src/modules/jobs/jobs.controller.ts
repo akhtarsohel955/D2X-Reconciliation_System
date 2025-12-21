@@ -17,7 +17,6 @@ export class JobsController {
     const job = await this.jobsService.createJob({
       userId,
       inputFileKey: body.inputFileKey,
-      inputFileType: body.inputFileType,
       documentType: body.documentType,
     });
 

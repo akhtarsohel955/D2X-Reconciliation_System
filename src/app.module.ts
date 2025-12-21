@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { UploadModule } from './modules/upload/upload.module';
+
 import { JobsModule } from './modules/jobs/jobs.module';
 
 import appConfig from './config/app.config';
@@ -12,6 +14,7 @@ import databaseConfig from './config/database.config';
     // Config
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env',
       load: [appConfig, databaseConfig],
     }),
 
@@ -33,6 +36,7 @@ import databaseConfig from './config/database.config';
 
     // Feature modules
     JobsModule,
+    UploadModule
   ],
 })
 export class AppModule {}

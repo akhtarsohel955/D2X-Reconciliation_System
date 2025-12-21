@@ -5,10 +5,6 @@ export class CreateJobDto {
   @IsNotEmpty()
   inputFileKey: string;
 
-  @IsString()
-  @IsNotEmpty()
-  inputFileType: string;
-
   @IsIn(['EXPENSE', 'HR'])
   documentType: 'EXPENSE' | 'HR';
 }
