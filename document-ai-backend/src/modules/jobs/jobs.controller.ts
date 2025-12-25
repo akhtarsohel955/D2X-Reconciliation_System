@@ -1,18 +1,22 @@
 import { Controller, Post, Body, Get, Param,HttpStatus} from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { CreateJobDto } from './dto/create-job.dto';
-import { Response } from 'express';0
+
 import { generateDownloadUrl } from '../../infra/s3/s3.presign';
+import { UseGuards, Req } from '@nestjs/common';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import type { Request } from 'express';
+
 
 @Controller('jobs')
+@UseGuards(JwtAuthGuard)
 export class JobsController {
   constructor(private readonly jobsService: JobsService) {}
 
   // POST /jobs
   @Post()
-  async createJob(@Body() body: CreateJobDto) {
-    // TEMP: hardcoded user (later from JWT)
-    const userId = 'mock-user-id';
+  async createJob(@Req() req: Request, @Body() body: CreateJobDto) {
+    const userId = (req.user as any).id;
 
     const job = await this.jobsService.createJob({
       userId,
@@ -27,8 +31,10 @@ export class JobsController {
   }
     // JOB STATUS POLLING API
   @Get(':id/status')
-  async getJobStatus(@Param('id') jobId: string) {
-    const job = await this.jobsService.getJobById(jobId);
+  async getJobStatus(@Req() req: Request, @Param('id') jobId: string) {
+    const userId = (req.user as any).userId;
+    const job = await this.jobsService.getJobById(jobId, userId);
+
 
     if (!job) {
       return {
@@ -54,10 +60,11 @@ export class JobsController {
   }
   // GET /jobs/:id
   @Get(':id/download')
-  async downloadJobResult(@Param('id') jobId: string) {
-    const job = await this.jobsService.getJobById(jobId);
+  async downloadJobResult(@Req() req: Request, @Param('id') jobId: string) {
+    const userId = (req.user as any).userId;
+    const job = await this.jobsService.getJobById(jobId, userId);
 
-    if (!job) {
+    if (!job) { 
       return {
         statusCode: HttpStatus.NOT_FOUND,
         message: 'Job not found',

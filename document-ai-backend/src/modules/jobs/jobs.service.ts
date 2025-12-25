@@ -40,11 +40,12 @@ export class JobsService {
   }
 
 
-  async getJobById(jobId: string) {
+  async getJobById(jobId: string, userId: string) {
     return this.jobRepository.findOne({
-      where: { id: jobId },
+      where: { id: jobId, userId },
     });
   }
+
 
   async updateJobStatus(
     jobId: string,

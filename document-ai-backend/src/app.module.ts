@@ -5,7 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UploadModule } from './modules/upload/upload.module';
 
 import { JobsModule } from './modules/jobs/jobs.module';
-
+import {AuthModule} from './modules/auth/auth.module'
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 
@@ -36,7 +36,8 @@ import databaseConfig from './config/database.config';
 
     // Feature modules
     JobsModule,
-    UploadModule
+    UploadModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
