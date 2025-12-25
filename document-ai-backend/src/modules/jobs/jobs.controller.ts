@@ -16,10 +16,10 @@ export class JobsController {
   // POST /jobs
   @Post()
   async createJob(@Req() req: Request, @Body() body: CreateJobDto) {
-    const userId = (req.user as any).id;
+    const user = req.user as any;
 
     const job = await this.jobsService.createJob({
-      userId,
+      userId: user.userId,
       inputFileKey: body.inputFileKey,
       documentType: body.documentType,
     });
