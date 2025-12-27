@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { login, register, isAuthenticated } from '../services/api';
 import Footer from '../components/Footer';
 
 export default function Home() {
@@ -7,22 +8,45 @@ export default function Home() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (isAuthenticated()) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simple mock authentication
-    const user = { email, name: name || email.split('@')[0], loggedIn: true };
-    localStorage.setItem('user', JSON.stringify(user));
-    navigate('/dashboard');
+    setLoading(true);
+    setError('');
+    
+    try {
+      await login(email, password);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simple mock registration
-    const user = { email, name, loggedIn: true };
-    localStorage.setItem('user', JSON.stringify(user));
-    navigate('/dashboard');
+    setLoading(true);
+    setError('');
+    
+    try {
+      await register(email, password, name);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -143,6 +167,12 @@ export default function Home() {
                   </div>
 
                   <form onSubmit={handleLogin} className="space-y-6">
+                    {error && (
+                      <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 text-red-200 text-sm">
+                        {error}
+                      </div>
+                    )}
+                    
                     <div>
                       <label className="block text-sm font-medium text-white/90 mb-2">
                         Email Address
@@ -154,6 +184,7 @@ export default function Home() {
                         className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all backdrop-blur-sm"
                         placeholder="Enter your email"
                         required
+                        disabled={loading}
                       />
                     </div>
 
@@ -168,14 +199,16 @@ export default function Home() {
                         className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all backdrop-blur-sm"
                         placeholder="Enter your password"
                         required
+                        disabled={loading}
                       />
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full bg-primary-gradient hover:opacity-90 text-white font-semibold py-4 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                      disabled={loading}
+                      className="w-full bg-primary-gradient hover:opacity-90 text-white font-semibold py-4 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     >
-                      Sign In
+                      {loading ? 'Signing In...' : 'Sign In'}
                     </button>
                   </form>
                 </div>
@@ -192,6 +225,12 @@ export default function Home() {
                   </div>
 
                   <form onSubmit={handleSignup} className="space-y-6">
+                    {error && (
+                      <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 text-red-200 text-sm">
+                        {error}
+                      </div>
+                    )}
+                    
                     <div>
                       <label className="block text-sm font-medium text-white/90 mb-2">
                         Full Name
@@ -203,6 +242,7 @@ export default function Home() {
                         className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all backdrop-blur-sm"
                         placeholder="Enter your full name"
                         required
+                        disabled={loading}
                       />
                     </div>
 
@@ -217,6 +257,7 @@ export default function Home() {
                         className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all backdrop-blur-sm"
                         placeholder="Enter your email"
                         required
+                        disabled={loading}
                       />
                     </div>
 
@@ -231,14 +272,16 @@ export default function Home() {
                         className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all backdrop-blur-sm"
                         placeholder="Create a password"
                         required
+                        disabled={loading}
                       />
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full bg-secondary-gradient hover:opacity-90 text-white font-semibold py-4 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                      disabled={loading}
+                      className="w-full bg-secondary-gradient hover:opacity-90 text-white font-semibold py-4 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     >
-                      Create Account
+                      {loading ? 'Creating Account...' : 'Create Account'}
                     </button>
                   </form>
                 </div>

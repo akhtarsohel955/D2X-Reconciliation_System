@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import FileUpload from '../components/FileUpload';
+import ProgressBar from '../components/ProgressBar';
 import Footer from '../components/Footer';
 import { useConversionStats } from '../contexts/ConversionContext';
 import { processDocument } from '../services/api';
@@ -9,6 +10,7 @@ interface ConversionResult {
   id: string;
   fileName: string;
   status: 'UPLOADING' | 'CREATING_JOB' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  percentage: number;
   downloadUrl?: string;
   error?: string;
   timestamp: Date;
@@ -19,6 +21,7 @@ export default function HRConverter() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [conversions, setConversions] = useState<ConversionResult[]>([]);
   const [currentStatus, setCurrentStatus] = useState<string>('');
+  const [currentPercentage, setCurrentPercentage] = useState<number>(0);
   const { incrementConversion, incrementSuccess, incrementFailure } = useConversionStats();
   const navigate = useNavigate();
 
@@ -48,14 +51,15 @@ export default function HRConverter() {
     setSelectedFile(file);
   };
 
-  const getStatusDisplay = (status: string) => {
+  const getStatusDisplay = (status: string, percentage?: number) => {
+    const percentText = percentage !== undefined ? ` ${Math.round(percentage)}%` : '';
     switch (status) {
       case 'UPLOADING':
-        return 'Uploading file...';
+        return `Uploading file...${percentText}`;
       case 'CREATING_JOB':
-        return 'Creating processing job...';
+        return `Creating processing job...${percentText}`;
       case 'PROCESSING':
-        return 'Processing with AI...';
+        return `Processing with AI...${percentText}`;
       case 'COMPLETED':
         return 'Completed';
       case 'FAILED':
@@ -79,6 +83,7 @@ export default function HRConverter() {
       id: conversionId,
       fileName: selectedFile.name,
       status: 'UPLOADING',
+      percentage: 0,
       timestamp: new Date(),
     };
 
@@ -88,12 +93,17 @@ export default function HRConverter() {
       const downloadUrl = await processDocument(
         selectedFile,
         'HR',
-        (status) => {
-          setCurrentStatus(getStatusDisplay(status));
+        (status, percentage = 0) => {
+          setCurrentStatus(getStatusDisplay(status, percentage));
+          setCurrentPercentage(percentage);
           setConversions((prev) =>
             prev.map((conv) =>
               conv.id === conversionId
-                ? { ...conv, status: status as ConversionResult['status'] }
+                ? { 
+                    ...conv, 
+                    status: status as ConversionResult['status'],
+                    percentage 
+                  }
                 : conv
             )
           );
@@ -107,6 +117,7 @@ export default function HRConverter() {
             ? {
                 ...conv,
                 status: 'COMPLETED',
+                percentage: 100,
                 downloadUrl,
               }
             : conv
@@ -118,6 +129,7 @@ export default function HRConverter() {
 
       setSelectedFile(null);
       setCurrentStatus('');
+      setCurrentPercentage(0);
     } catch (error) {
       console.error('Conversion failed:', error);
       
@@ -138,6 +150,7 @@ export default function HRConverter() {
       incrementFailure();
 
       setCurrentStatus('');
+      setCurrentPercentage(0);
     } finally {
       setIsProcessing(false);
     }
@@ -200,38 +213,51 @@ export default function HRConverter() {
 
           {/* Convert Button */}
           {selectedFile && (
-            <div className="mt-10 flex flex-col sm:flex-row gap-6 justify-center">
-              <button
-                onClick={handleConvert}
-                disabled={isProcessing}
-                className="px-10 py-5 bg-purple-gradient hover:opacity-90 disabled:opacity-50 text-white font-semibold rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl disabled:cursor-not-allowed flex items-center justify-center hover:scale-105"
-              >
-                {isProcessing ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    {currentStatus || 'Converting to Excel...'}
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
-                    Convert to Excel
-                  </>
-                )}
-              </button>
-              
-              {!isProcessing && (
-                <button
-                  onClick={() => setSelectedFile(null)}
-                  className="px-10 py-5 border-2 border-gray-300 text-gray-700 hover:bg-white/50 font-semibold rounded-2xl transition-all duration-300 backdrop-blur-sm hover:scale-105"
-                >
-                  Clear File
-                </button>
+            <div className="mt-10 space-y-6">
+              {/* Progress Bar */}
+              {isProcessing && (
+                <div className="max-w-2xl mx-auto">
+                  <ProgressBar 
+                    percentage={currentPercentage} 
+                    status={currentStatus.split(' ')[0] || 'PROCESSING'} 
+                    className="mb-4"
+                  />
+                </div>
               )}
+              
+              <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                <button
+                  onClick={handleConvert}
+                  disabled={isProcessing}
+                  className="px-10 py-5 bg-purple-gradient hover:opacity-90 disabled:opacity-50 text-white font-semibold rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl disabled:cursor-not-allowed flex items-center justify-center hover:scale-105"
+                >
+                  {isProcessing ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      {currentStatus || 'Converting to Excel...'}
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      Convert to Excel
+                    </>
+                  )}
+                </button>
+                
+                {!isProcessing && (
+                  <button
+                    onClick={() => setSelectedFile(null)}
+                    className="px-10 py-5 border-2 border-gray-300 text-gray-700 hover:bg-white/50 font-semibold rounded-2xl transition-all duration-300 backdrop-blur-sm hover:scale-105"
+                  >
+                    Clear File
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -265,16 +291,23 @@ export default function HRConverter() {
                   </div>
 
                   <div className="flex items-center gap-6">
-                    {/* Status Badge */}
-                    <div>
+                    {/* Status Badge and Progress */}
+                    <div className="min-w-0 flex-1">
                       {(conversion.status === 'UPLOADING' || conversion.status === 'CREATING_JOB' || conversion.status === 'PROCESSING') && (
-                        <span className="inline-flex items-center px-6 py-3 rounded-2xl font-semibold bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-800 border border-yellow-200 shadow-lg">
-                          <svg className="animate-spin w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          {getStatusDisplay(conversion.status)}
-                        </span>
+                        <div className="space-y-3">
+                          <span className="inline-flex items-center px-6 py-3 rounded-2xl font-semibold bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-800 border border-yellow-200 shadow-lg">
+                            <svg className="animate-spin w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            {getStatusDisplay(conversion.status, conversion.percentage)}
+                          </span>
+                          <ProgressBar 
+                            percentage={conversion.percentage} 
+                            status={conversion.status} 
+                            className="max-w-xs"
+                          />
+                        </div>
                       )}
                       {conversion.status === 'COMPLETED' && (
                         <span className="inline-flex items-center px-6 py-3 rounded-2xl font-semibold bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200 shadow-lg">

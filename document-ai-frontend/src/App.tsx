@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import { ConversionProvider } from './contexts/ConversionContext'
+import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
 import ExpenseConverter from './pages/ExpenseConverter'
@@ -10,9 +11,30 @@ function App() {
     <ConversionProvider>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/expense" element={<ExpenseConverter />} />
-        <Route path="/hr" element={<HRConverter />} />
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/expense" 
+          element={
+            <ProtectedRoute>
+              <ExpenseConverter />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/hr" 
+          element={
+            <ProtectedRoute>
+              <HRConverter />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
     </ConversionProvider>
   )

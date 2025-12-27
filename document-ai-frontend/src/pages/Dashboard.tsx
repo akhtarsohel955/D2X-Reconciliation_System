@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useConversionStats } from '../contexts/ConversionContext';
+import { TokenManager, logout } from '../services/api';
 import Footer from '../components/Footer';
 
 interface Module {
@@ -37,28 +38,22 @@ const modules: Module[] = [
 export default function Dashboard() {
   const navigate = useNavigate();
   const { stats, resetStats } = useConversionStats();
-  const [user, setUser] = useState<{ name?: string; email: string; loggedIn: boolean } | null>(null);
+  const [user, setUser] = useState<{ name?: string; email: string } | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [quickFile, setQuickFile] = useState<File | null>(null);
 
   useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem('user');
+    // Get user from token manager
+    const userData = TokenManager.getUser();
     if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        navigate('/');
-      }
+      setUser(userData);
     } else {
       navigate('/');
     }
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
+    logout();
     navigate('/');
   };
 
