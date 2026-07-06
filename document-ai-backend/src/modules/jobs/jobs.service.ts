@@ -13,7 +13,7 @@ export class JobsService {
   ) {}
 
   async createJob(params: {
-    userId: string;
+    userId?: string;
     inputFileKey: string;
     documentType: 'EXPENSE' | 'HR';
   }) {
@@ -21,7 +21,7 @@ export class JobsService {
 
     const job = this.jobRepository.create({
       id: uuid(),
-      userId: params.userId,
+      userId: params.userId || 'guest', // Use 'guest' for unauthenticated users
       inputFileKey: params.inputFileKey,
       inputFileType: extension, // ✅ derived here
       documentType: params.documentType,
@@ -39,13 +39,18 @@ export class JobsService {
     return savedJob;
   }
 
-
-  async getJobById(jobId: string, userId: string) {
-    return this.jobRepository.findOne({
-      where: { id: jobId, userId },
-    });
+  async getJobById(jobId: string, userId?: string) {
+    if (userId) {
+      return this.jobRepository.findOne({
+        where: { id: jobId, userId },
+      });
+    } else {
+      // For guest users, just find by jobId
+      return this.jobRepository.findOne({
+        where: { id: jobId },
+      });
+    }
   }
-
 
   async updateJobStatus(
     jobId: string,

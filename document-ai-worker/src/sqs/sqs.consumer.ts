@@ -14,6 +14,7 @@ import { generateExpenseExcel } from '../exporters/excel.exporter';
 
 import { uploadExcelToS3 } from '../storage/s3.service';
 import { updateJobStatus } from '../jobs/job.repository';
+import { processReconciliation } from '../reconciliation/reconciliation.processor';
 
 
 const QUEUE_URL = process.env.SQS_QUEUE_URL!;
@@ -35,12 +36,23 @@ export async function pollQueue() {
     const message = response.Messages[0];
     const body = JSON.parse(message.Body!);
 
-    const { jobId, inputFileKey, documentType } = body;
-
-    console.log('📥 Received job:', body);
+    console.log('📥 Received message:', body);
 
     try {
-      await markJobProcessing(jobId);
+      // Check message type
+      if (body.type === 'RECONCILIATION') {
+        // Handle reconciliation message
+        await processReconciliation({
+          reconciliationId: body.reconciliationId,
+          sourceFileKeys: body.sourceFileKeys,
+          targetFileKeys: body.targetFileKeys,
+          reconciliationType: body.reconciliationType,
+        });
+      } else {
+        // Handle regular job message (backward compatible)
+        const { jobId, inputFileKey, documentType } = body;
+
+        await markJobProcessing(jobId);
 
       // 🔥 TEXTRACT FLOW STARTS
       const textractJobId = await TextractService.startJob(
@@ -88,10 +100,9 @@ export async function pollQueue() {
       });
 
       console.log(`✅ ${documentType} job completed: ${outputKey}`);
+      }
 
-
-      // (Parsing + Excel will come next)
-
+      // Delete message from queue
       await sqsClient.send(
         new DeleteMessageCommand({
           QueueUrl: QUEUE_URL,
@@ -99,7 +110,7 @@ export async function pollQueue() {
         }),
       );
     } catch (err: any) {
-      console.error('❌ Textract error:', err.message);
+      console.error('❌ Processing error:', err.message);
       throw err;
     }
   }

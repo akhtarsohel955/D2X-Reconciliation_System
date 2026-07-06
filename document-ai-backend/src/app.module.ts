@@ -5,7 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UploadModule } from './modules/upload/upload.module';
 
 import { JobsModule } from './modules/jobs/jobs.module';
-import {AuthModule} from './modules/auth/auth.module'
+import { AuthModule } from './modules/auth/auth.module';
+import { ReconciliationModule } from './modules/reconciliation/reconciliation.module';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 
@@ -38,6 +39,7 @@ import databaseConfig from './config/database.config';
     JobsModule,
     UploadModule,
     AuthModule,
+    ReconciliationModule,
   ],
 })
 export class AppModule {}

@@ -11,7 +11,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   useEffect(() => {
     if (!isAuthenticated()) {
-      navigate('/', { replace: true });
+      navigate('/auth', { replace: true });
     }
   }, [navigate]);
 

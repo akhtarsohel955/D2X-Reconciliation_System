@@ -9,7 +9,21 @@ export class SqsProducer {
   }) {
     const command = new SendMessageCommand({
       QueueUrl: process.env.SQS_QUEUE_URL!,
-      MessageBody: JSON.stringify(payload),
+      MessageBody: JSON.stringify({ type: 'JOB', ...payload }),
+    });
+
+    await sqsClient.send(command);
+  }
+
+  static async sendReconciliationMessage(payload: {
+    reconciliationId: string;
+    sourceFileKeys: string[];
+    targetFileKeys: string[];
+    reconciliationType: string;
+  }) {
+    const command = new SendMessageCommand({
+      QueueUrl: process.env.SQS_QUEUE_URL!,
+      MessageBody: JSON.stringify({ type: 'RECONCILIATION', ...payload }),
     });
 
     await sqsClient.send(command);

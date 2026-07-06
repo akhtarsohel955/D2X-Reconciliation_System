@@ -1,10 +1,12 @@
+# Node modules
+node_modules/
+*/node_modules/
 
-/frontend
-
-# compiled output
+# Compiled output
 /dist
-/node_modules
+*/dist/
 /build
+*/build/
 
 # Logs
 logs
@@ -17,6 +19,7 @@ lerna-debug.log*
 
 # OS
 .DS_Store
+Thumbs.db
 
 # Tests
 /coverage
@@ -30,22 +33,22 @@ lerna-debug.log*
 *.launch
 .settings/
 *.sublime-workspace
-
-# IDE - VSCode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# dotenv environment variable files
+# Environment variables (IMPORTANT - Contains secrets)
 .env
 .env.development.local
 .env.test.local
 .env.production.local
 .env.local
+**/.env
+**/.env.local
 
-# temp directory
+# Temporary files
 .temp
 .tmp
 
@@ -55,10 +58,22 @@ pids
 *.seed
 *.pid.lock
 
-# Diagnostic reports (https://nodejs.org/api/report.html)
+# Diagnostic reports
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
+# Sample files
 sampleInvoice.png
 sampleInvoicePDF.pdf
 sampleInvoicePDF.xlsx
 public.zip
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Mac files
+.DS_Store
+
+# Windows files
+Thumbs.db
+ehthumbs.db
+Desktop.ini

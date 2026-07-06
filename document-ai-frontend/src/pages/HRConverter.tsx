@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import FileUpload from '../components/FileUpload';
 import ProgressBar from '../components/ProgressBar';
 import Footer from '../components/Footer';
 import { useConversionStats } from '../contexts/ConversionContext';
-import { processDocument } from '../services/api';
+import { processDocument, isAuthenticated } from '../services/api';
 
 interface ConversionResult {
   id: string;
@@ -22,15 +22,13 @@ export default function HRConverter() {
   const [conversions, setConversions] = useState<ConversionResult[]>([]);
   const [currentStatus, setCurrentStatus] = useState<string>('');
   const [currentPercentage, setCurrentPercentage] = useState<number>(0);
+  const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
   const { incrementConversion, incrementSuccess, incrementFailure } = useConversionStats();
-  const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem('user');
-    if (!userData) {
-      navigate('/');
-    }
+    // Check authentication status
+    const authenticated = isAuthenticated();
+    setIsUserAuthenticated(authenticated);
 
     // Check for uploaded file from dashboard
     const uploadedFile = sessionStorage.getItem('uploadedFile');
@@ -45,7 +43,7 @@ export default function HRConverter() {
         console.error('Error parsing uploaded file:', error);
       }
     }
-  }, [navigate]);
+  }, []);
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -168,13 +166,13 @@ export default function HRConverter() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Link 
-                to="/dashboard" 
+                to="/" 
                 className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 font-medium transition-colors duration-300 hover-lift"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                <span>Back to Dashboard</span>
+                <span>Back to Home</span>
               </Link>
             </div>
             <div className="flex items-center space-x-4">
@@ -194,6 +192,28 @@ export default function HRConverter() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Upload Section */}
         <div className="glass backdrop-blur-md rounded-3xl border border-white/20 shadow-2xl p-10 mb-12 hover-lift">
+          {/* Authentication Notice for Guest Users */}
+          {!isUserAuthenticated && (
+            <div className="mb-8 p-6 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-2xl">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-purple-900 mb-1">Guest Mode</h3>
+                  <p className="text-purple-700 text-sm">
+                    You're using the service as a guest. Your conversion history won't be saved. 
+                    <Link to="/" className="font-medium underline hover:no-underline ml-1">
+                      Sign up for free
+                    </Link> to track your conversions.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="text-center mb-10">
             <div className="w-20 h-20 bg-purple-gradient rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
               <span className="text-4xl">👥</span>
@@ -262,15 +282,26 @@ export default function HRConverter() {
           )}
         </div>
 
-        {/* Conversion History */}
+        {/* Conversion History - Show for all users, but only persist for authenticated users */}
         {conversions.length > 0 && (
           <div className="glass backdrop-blur-md rounded-3xl border border-white/20 shadow-2xl p-10 mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-8 flex items-center">
               <svg className="w-8 h-8 mr-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Conversion History
+              {isUserAuthenticated ? 'Conversion History' : 'Current Session Conversions'}
             </h2>
+
+            {!isUserAuthenticated && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl">
+                <p className="text-amber-800 text-sm flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  These conversions are only available in your current session and won't be saved.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-6">
               {conversions.map((conversion) => (

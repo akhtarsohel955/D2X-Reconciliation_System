@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { isAuthenticated } from '../services/api';
 
 export interface ConversionStats {
   totalConversions: number;
@@ -22,7 +23,18 @@ const STORAGE_KEY = 'conversion_stats';
 
 export function ConversionProvider({ children }: { children: ReactNode }) {
   const [stats, setStats] = useState<ConversionStats>(() => {
-    // Load stats from localStorage on initialization
+    // Only load stats for authenticated users
+    if (!isAuthenticated()) {
+      return {
+        totalConversions: 0,
+        filesProcessed: 0,
+        successfulConversions: 0,
+        failedConversions: 0,
+        successRate: 100,
+      };
+    }
+
+    // Load stats from localStorage for authenticated users
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
@@ -40,9 +52,11 @@ export function ConversionProvider({ children }: { children: ReactNode }) {
     };
   });
 
-  // Save stats to localStorage whenever they change
+  // Save stats to localStorage whenever they change (only for authenticated users)
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+    if (isAuthenticated()) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+    }
   }, [stats]);
 
   const incrementConversion = () => {
@@ -82,6 +96,9 @@ export function ConversionProvider({ children }: { children: ReactNode }) {
   };
 
   const resetStats = () => {
+    // Only allow reset for authenticated users
+    if (!isAuthenticated()) return;
+    
     const initialStats = {
       totalConversions: 0,
       filesProcessed: 0,

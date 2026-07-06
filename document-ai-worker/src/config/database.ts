@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { Job } from '../entity/job.entity';
+import { Reconciliation } from '../entity/reconciliation.entity';
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -9,6 +10,6 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  entities: [Job],
+  entities: [Job, Reconciliation],
   synchronize: false, // IMPORTANT: worker never auto-syncs
 });
